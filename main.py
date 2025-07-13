@@ -8,6 +8,7 @@ Usage:
 Example:
     python main.py --address 0x1234...abcd --apikey YourEtherscanKey --network mainnet
 """
+
 import time
 import requests
 import json
@@ -21,25 +22,28 @@ def get_block_by_time(base_url, params):
     r = requests.get(base_url, params=params)
     r.raise_for_status()
     data = r.json()
-    if data.get('status') != '1':
-        raise RuntimeError(f"Error fetching block number: {data.get('message')} / {data.get('result')}")
-    return int(data['result'])
+    if data.get("status") != "1":
+        raise RuntimeError(
+            f"Error fetching block number: {data.get('message')} / {data.get('result')}"
+        )
+    return int(data["result"])
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Fetch contract method calls from the past week.")
-    parser.add_argument(
-        '--address', required=True,
-        help="Target contract address (in checksum or non-checksum form)"
+    parser = argparse.ArgumentParser(
+        description="Fetch contract method calls from the past week."
     )
     parser.add_argument(
-        '--apikey', required=True,
-        help="Your Etherscan API key"
+        "--address",
+        required=True,
+        help="Target contract address (in checksum or non-checksum form)",
     )
+    parser.add_argument("--apikey", required=True, help="Your Etherscan API key")
     parser.add_argument(
-        '--network', default="mainnet",
+        "--network",
+        default="mainnet",
         choices=["mainnet", "ropsten", "rinkeby", "kovan", "goerli"],
-        help="Ethereum network to query (default: mainnet)"
+        help="Ethereum network to query (default: mainnet)",
     )
     args = parser.parse_args()
 
@@ -48,10 +52,10 @@ def main():
     network = args.network.lower()
 
     # Determine base API URL
-    if network == 'mainnet':
-        base_url = 'https://api.etherscan.io/api'
+    if network == "mainnet":
+        base_url = "https://api.etherscan.io/api"
     else:
-        base_url = f'https://api-{network}.etherscan.io/api'
+        base_url = f"https://api-{network}.etherscan.io/api"
 
     # Compute timestamps for the past week
     now_ts = int(time.time())
@@ -61,22 +65,22 @@ def main():
     start_block = get_block_by_time(
         base_url,
         {
-            'module': 'block',
-            'action': 'getblocknobytime',
-            'timestamp': one_week_ago_ts,
-            'closest': 'before',
-            'apikey': api_key,
-        }
+            "module": "block",
+            "action": "getblocknobytime",
+            "timestamp": one_week_ago_ts,
+            "closest": "before",
+            "apikey": api_key,
+        },
     )
     end_block = get_block_by_time(
         base_url,
         {
-            'module': 'block',
-            'action': 'getblocknobytime',
-            'timestamp': now_ts,
-            'closest': 'before',
-            'apikey': api_key,
-        }
+            "module": "block",
+            "action": "getblocknobytime",
+            "timestamp": now_ts,
+            "closest": "before",
+            "apikey": api_key,
+        },
     )
     print(f"Scanning blocks {start_block} to {end_block} for contract {address}...")
 
@@ -84,18 +88,20 @@ def main():
     resp = requests.get(
         base_url,
         params={
-            'module': 'contract',
-            'action': 'getabi',
-            'address': address,
-            'apikey': api_key,
-        }
+            "module": "contract",
+            "action": "getabi",
+            "address": address,
+            "apikey": api_key,
+        },
     )
     resp.raise_for_status()
     abi_data = resp.json()
-    if abi_data.get('status') != '1':
-        raise RuntimeError(f"Failed to fetch ABI: {abi_data.get('message')} / {abi_data.get('result')}")
+    if abi_data.get("status") != "1":
+        raise RuntimeError(
+            f"Failed to fetch ABI: {abi_data.get('message')} / {abi_data.get('result')}"
+        )
 
-    abi = json.loads(abi_data['result'])
+    abi = json.loads(abi_data["result"])
     w3 = Web3()
     contract = w3.eth.contract(address=address, abi=abi)
 
@@ -103,73 +109,77 @@ def main():
     ext_txs_resp = requests.get(
         base_url,
         params={
-            'module': 'account',
-            'action': 'txlist',
-            'address': address,
-            'startblock': start_block,
-            'endblock': end_block,
-            'sort': 'asc',
-            'apikey': api_key,
-        }
+            "module": "account",
+            "action": "txlist",
+            "address": address,
+            "startblock": start_block,
+            "endblock": end_block,
+            "sort": "asc",
+            "apikey": api_key,
+        },
     )
     ext_txs_resp.raise_for_status()
-    ext_txs = ext_txs_resp.json().get('result', [])
+    ext_txs = ext_txs_resp.json().get("result", [])
 
     # Fetch internal transactions
     int_txs_resp = requests.get(
         base_url,
         params={
-            'module': 'account',
-            'action': 'txlistinternal',
-            'address': address,
-            'startblock': start_block,
-            'endblock': end_block,
-            'sort': 'asc',
-            'apikey': api_key,
-        }
+            "module": "account",
+            "action": "txlistinternal",
+            "address": address,
+            "startblock": start_block,
+            "endblock": end_block,
+            "sort": "asc",
+            "apikey": api_key,
+        },
     )
     int_txs_resp.raise_for_status()
-    int_txs = int_txs_resp.json().get('result', [])
+    int_txs = int_txs_resp.json().get("result", [])
 
     # Prepare CSV output
-    output_file = 'output.csv'
-    with open(output_file, 'w', newline='') as csvfile:
-        fieldnames = ['txHash', 'method', 'caller', 'isInternal']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+    output_file = "output.csv"
+    with open(output_file, "w", newline="") as csv_file:
+        fieldnames = ["txHash", "method", "caller", "isInternal"]
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
         writer.writeheader()
 
         # External calls: direct from EOA or other contracts
         for tx in ext_txs:
-            method = 'UNKNOWN'
+            method = "UNKNOWN"
             try:
-                fn_obj, _ = contract.decode_function_input(tx.get('input', ''))
+                fn_obj, _ = contract.decode_function_input(tx.get("input", ""))
                 method = fn_obj.fn_name
             except Exception:
                 pass
-            writer.writerow({
-                'txHash': tx['hash'],
-                'method': method,
-                'caller': tx['from'],
-                'isInternal': False,
-            })
+            writer.writerow(
+                {
+                    "txHash": tx["hash"],
+                    "method": method,
+                    "caller": tx["from"],
+                    "isInternal": False,
+                }
+            )
 
         # Internal calls: executed inside other contract contexts
         for tx in int_txs:
-            method = 'UNKNOWN'
+            method = "UNKNOWN"
             try:
-                fn_obj, _ = contract.decode_function_input(tx.get('input', ''))
+                fn_obj, _ = contract.decode_function_input(tx.get("input", ""))
                 method = fn_obj.fn_name
             except Exception:
                 pass
-            writer.writerow({
-                'txHash': tx['hash'],
-                'method': method,
-                'caller': tx['from'],
-                'isInternal': True,
-            })
+            writer.writerow(
+                {
+                    "txHash": tx["hash"],
+                    "method": method,
+                    "caller": tx["from"],
+                    "isInternal": True,
+                }
+            )
 
     print(f"Done. Results saved to {output_file}.")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
