@@ -1,3 +1,39 @@
+# Prompt History
+
+### prompt1
+とあるコントラクトが、過去にどのメソッドがどこから叩かれたかを網羅的に知りたいです。期間としては直近1週間くらいで大丈夫です。
+というのも、Etherscanなどからでは微妙に分かりにくいからです。最終的な出力は、csv形式で少なくとも以下の内容は欲しいです。
+
+- txHash: その関数呼び出しのトランザクションハッシュ
+- method: 叩かれたメソッド名
+- caller: 呼び出したEOA/contract address
+- isInternal: internal txとして呼ばれたのか, EOAから直接呼ばれたのか
+
+Pythonで`main.py`という1ファイルのスクリプトを書いていただけますか？
+
+### reply1
+
+`main.py` を作成しました。このスクリプトは以下の機能を持ちます：
+
+* 過去1週間の対象コントラクトへの外部トランザクション（EOA または他のコントラクトからの直接呼び出し）を取得
+* 同期間の内部トランザクション（他コントラクト実行中の呼び出し）を取得
+* 各呼び出しのトランザクションハッシュ、メソッド名、呼び出し元アドレス、`isInternal` フラグを CSV (`output.csv`) に出力
+
+必要な Python パッケージ：
+
+```bash
+pip install web3 requests
+```
+
+実行例：
+
+```bash
+python main.py --address 0xYourContractAddress --apikey YourEtherscanApiKey --network mainnet
+```
+
+ご不明点や機能追加のご要望があればお知らせください。
+
+```python
 #!/usr/bin/env python3
 """
 main.py: Fetch all external and internal method calls made to a specified Ethereum contract over the past week and output the results as CSV.
@@ -173,3 +209,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+```
